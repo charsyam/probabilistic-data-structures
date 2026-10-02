@@ -6,3 +6,4 @@
 .cell.highlight.missing{position:relative;background:#ffe6e5;border:2px solid #c93b3b}.cell.highlight.missing strong{color:#b52222;font-weight:700}.cell.highlight.missing small{color:#a83c3c}.zero-marker{position:absolute;right:3px;top:2px;font-size:9px;color:#b52222;font-weight:700}.legend .missing{background:#ffe6e5;border:1px solid #c93b3b}.legend{flex-wrap:wrap}.check.missed{background:#fff0ef;border-color:#d66a66;color:#b52222}
 
 .cell.highlight.query-hit{background:#deebff;border:2px solid #3478db}.cell.highlight.query-hit strong{color:#1756b5;font-weight:700}.cell.highlight.query-hit small{color:#3767a8}.legend .query-hit{background:#deebff;border:1px solid #3478db}.check.matched{background:#edf4ff;border-color:#6296e3;color:#1756b5}
+.stream-item{display:inline-block;padding:9px 12px;border:1px solid var(--border);border-radius:5px}.signature-grid .cell{padding:6px;overflow-wrap:anywhere;text-align:center}.signature-grid .cell strong{max-width:100%}

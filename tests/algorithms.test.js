@@ -76,3 +76,50 @@ test('LSH returns identical sets with all matching bands and rejects disjoint se
   assert.deepEqual(results[0].matchingBands,[0,1,2,3]);
   assert.equal(results[1].candidate,false);
 });
+
+import {ReservoirSampling, QuantileSketch} from '../shared/stream-algorithms.js';
+test('Reservoir fills, replaces, skips and preserves duplicate stream entries',()=>{
+  const draws=[0,0.99];
+  const r=new ReservoirSampling(2,()=>draws.shift());
+  r.insert('a');r.insert('a');
+  assert.deepEqual(r.sample,['a','a']);
+  assert.equal(r.insert('b').previous,'a');
+  assert.equal(r.insert('c').accepted,false);
+  assert.deepEqual(r.sample,['b','a']);assert.equal(r.count,4);
+});
+test('Reservoir sampling includes each stream position at approximately k/n',()=>{
+  let state=123456;
+  const random=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/2**32;};
+  const counts=Array(20).fill(0);
+  for(let trial=0;trial<10000;trial++){
+    const r=new ReservoirSampling(4,random);
+    for(let i=0;i<20;i++)r.insert(i);
+    for(const i of r.sample)counts[i]++;
+  }
+  for(const count of counts)assert.ok(Math.abs(count-2000)<160,`inclusions=${count}`);
+});
+test('GK preserves rank bounds and estimates ordered, reversed, repeated and mixed streams',()=>{
+  let state=42;
+  const mixed=Array.from({length:2000},()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state%1000-500;});
+  for(const values of [Array.from({length:2000},(_,i)=>i),Array.from({length:2000},(_,i)=>-i),Array(2000).fill(5),mixed]){
+    const s=new QuantileSketch(0.02);
+    assert.equal(s.quantile(0.5),null);
+    for(const v of values)s.insert(v);
+    assert.equal(s.tuples.reduce((n,t)=>n+t.g,0),values.length);
+    assert.ok(s.tuples.length<values.length/4);
+    const sorted=[...values].sort((a,b)=>a-b);
+    assert.equal(s.quantile(0),sorted[0]);assert.equal(s.quantile(1),sorted.at(-1));
+    for(let i=1;i<100;i++){
+      const q=i/100, value=s.quantile(q),rank=Math.ceil(q*values.length);
+      const lower=sorted.filter(v=>v<value).length+1,upper=sorted.filter(v=>v<=value).length;
+      assert.ok(Math.max(lower-rank,rank-upper,0)<=s.epsilon*values.length,`q=${q}, rank=${rank}, range=${lower}..${upper}`);
+    }
+  }
+});
+test('Stream algorithms reject invalid parameters and non-finite numeric inputs',()=>{
+  assert.throws(()=>new ReservoirSampling(0),RangeError);
+  assert.throws(()=>new QuantileSketch(0),RangeError);
+  const s=new QuantileSketch();
+  assert.throws(()=>s.insert(Infinity),TypeError);
+  assert.throws(()=>s.quantile(1.1),RangeError);
+});
